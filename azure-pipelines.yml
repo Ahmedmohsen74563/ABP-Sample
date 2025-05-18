@@ -1,0 +1,97 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '**/*.csproj'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  artifactName: 'dotnet9app'
+
+stages:
+
+# ========================
+# Stage 1: Build & Publish
+# ========================
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: BuildJob
+    steps:
+
+    # ⬇ Install .NET SDK 9.0.300
+    - task: UseDotNet@2
+      inputs:
+        version: '9.0.300'
+        includePreviewVersions: true
+        packageType: 'sdk'
+
+    # ⬇ Restore dependencies
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '$(solution)'
+
+    # ⬇ Build the project
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration)'
+
+    # ⬇ Publish the app to a folder
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
+
+    # ⬇ Publish artifacts (to deploy later)
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: '$(artifactName)'
+
+# ====================
+# Stage 2: Deployment
+# ====================
+- stage: Deploy
+  displayName: 'Deploy Stage'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployJob
+    displayName: 'Deploy to Sample App Environment'
+    environment: 
+      name: 'Sample App'
+      resourceType: VirtualMachine
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          # ✅ Download the artifact from the latest build
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifactName: '$(artifactName)'
+              targetPath: '$(Pipeline.Workspace)/deploy'
+
+          # ✅ Deploy the web app package using IISWebAppDeploymentOnMachineGroup
+          # deploy a web application package (ZIP file) to an IIS server.It connects to the target machine(s), extracts the ZIP, and places the files into the correct IIS website folder.
+          - task: IISWebAppDeploymentOnMachineGroup@0
+            inputs:
+              WebSiteName: 'ABP-Sample'  # <-- REQUIRED
+              Package: '$(Pipeline.Workspace)\deploy\**\*.zip'
+              AdditionalArguments: '-enableRule:AppOffline'
+
+          # ✅ Manage IIS website (create or update)
+          - task: IISWebAppManagementOnMachineGroup@0
+            inputs:
+              IISDeploymentType: 'IISWebsite'
+              ActionIISWebsite: 'CreateOrUpdateWebsite'
+              WebsiteName: 'ABP-Sample'  # <-- Customize as needed
+              WebsitePhysicalPath: '%SystemDrive%\inetpub\wwwroot\ABP-Sample'
+              WebsitePhysicalPathAuth: 'WebsiteUserPassThrough'
