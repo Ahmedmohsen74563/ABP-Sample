@@ -77,14 +77,14 @@ stages:
           - task: DownloadPipelineArtifact@2
             inputs:
               artifactName: '$(artifactName)'
-              targetPath: '$(Pipeline.Workspace)/deploy'
+              targetPath: '$(Pipeline.Workspace)/deploy/app'
 
           # ✅ Deploy the web app package using IISWebAppDeploymentOnMachineGroup
           # deploy a web application package (ZIP file) to an IIS server.It connects to the target machine(s), extracts the ZIP, and places the files into the correct IIS website folder.
           - task: IISWebAppDeploymentOnMachineGroup@0
             inputs:
               WebSiteName: 'ABP-Sample'  # <-- REQUIRED
-              Package: '$(Pipeline.Workspace)\deploy\**\*.zip'
+              Package: '$(Pipeline.Workspace)\deploy\app\**\*.zip'
               AdditionalArguments: '-enableRule:AppOffline'
 
           # ✅ Manage IIS website (create or update)
