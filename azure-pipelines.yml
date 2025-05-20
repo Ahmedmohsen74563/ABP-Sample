@@ -58,7 +58,7 @@ stages:
     - script: |
         abp install-libs
         npm install --prefer-offline --cache $(npmCacheFolder)
-      workingDirectory: '$(Build.SourcesDirectory)'
+      workingDirectory: '$(Build.SourcesDirectory)/Acme.BookStore'
       displayName: 'Install ABP client libraries'
 
     # ⬇ Build the project
