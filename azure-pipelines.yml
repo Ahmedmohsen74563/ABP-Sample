@@ -9,6 +9,7 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   artifactName: 'dotnet9app'
+  npmCacheFolder: '$(Pipeline.Workspace)/.npm'  # For caching node_modules
 
 stages:
 
@@ -28,11 +29,37 @@ stages:
         includePreviewVersions: true
         packageType: 'sdk'
 
+    # ⬇ Install Node.js (required for frontend dependencies)
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Install Node.js'
+
+    # ⬇ Cache node_modules for faster builds
+    - task: Cache@2
+      inputs:
+        key: 'npm | "$(Agent.OS)" | $(Build.SourcesDirectory)/package.json'
+        restoreKeys: |
+          npm | "$(Agent.OS)"
+        path: '$(npmCacheFolder)'
+      displayName: 'Cache npm packages'
+
+    # ⬇ Install ABP CLI globally
+    - script: dotnet tool install -g Volo.Abp.Cli
+      displayName: 'Install ABP CLI'
+
     # ⬇ Restore dependencies
     - task: DotNetCoreCLI@2
       inputs:
         command: 'restore'
         projects: '$(solution)'
+
+    # ⬇ Install client-side libraries
+    - script: |
+        abp install-libs
+        npm install --prefer-offline --cache $(npmCacheFolder)
+      workingDirectory: '$(Build.SourcesDirectory)'
+      displayName: 'Install ABP client libraries'
 
     # ⬇ Build the project
     - task: DotNetCoreCLI@2
@@ -80,10 +107,9 @@ stages:
               targetPath: '$(Pipeline.Workspace)/deploy/app'
 
           # ✅ Deploy the web app package using IISWebAppDeploymentOnMachineGroup
-          # deploy a web application package (ZIP file) to an IIS server.It connects to the target machine(s), extracts the ZIP, and places the files into the correct IIS website folder.
           - task: IISWebAppDeploymentOnMachineGroup@0
             inputs:
-              WebSiteName: 'ABP-Sample'  # <-- REQUIRED
+              WebSiteName: 'ABP-Sample'
               Package: '$(Pipeline.Workspace)\deploy\app\**\*.zip'
               AdditionalArguments: '-enableRule:AppOffline'
 
@@ -92,6 +118,6 @@ stages:
             inputs:
               IISDeploymentType: 'IISWebsite'
               ActionIISWebsite: 'CreateOrUpdateWebsite'
-              WebsiteName: 'ABP-Sample'  # <-- Customize as needed
+              WebsiteName: 'ABP-Sample'
               WebsitePhysicalPath: '%SystemDrive%\inetpub\wwwroot\ABP-Sample'
               WebsitePhysicalPathAuth: 'WebsiteUserPassThrough'
