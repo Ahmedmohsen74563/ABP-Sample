@@ -10,11 +10,7 @@ pipeline {
     }
 
     stages {
-        stage('Clean Workspace') {
-            steps {
-                cleanWs() // Jenkins built-in workspace cleaner
-            }
-        }
+        
         stage('Restore Dependencies') {
             steps {
                 echo "Restoring solution dependencies..."
@@ -40,6 +36,11 @@ pipeline {
         stage('Archive Artifacts') {
             steps {
                 archiveArtifacts artifacts: "${ARTIFACT_NAME}.zip", fingerprint: true
+            }
+        }
+        stage('Clean Workspace') {
+            steps {
+                cleanWs() // Jenkins built-in workspace cleaner
             }
         }
     }
