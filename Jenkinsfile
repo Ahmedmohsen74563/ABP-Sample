@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        SOLUTION = '**\\*.csproj'
         BUILD_CONFIGURATION = 'Release'
         ARTIFACT_NAME = 'dotnet9app'
         NPM_CACHE_FOLDER = "${env.WORKSPACE}\\.npm"
@@ -12,23 +11,22 @@ pipeline {
     stages {
         stage('Restore Dependencies') {
             steps {
-                echo "Restoring projects: ${env.SOLUTION}"
-                bat "dotnet restore ${env.SOLUTION}"
+                echo "Restoring all .csproj files..."
+                bat 'powershell -Command "Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object { dotnet restore $_.FullName }"'
             }
         }
 
         stage('Build') {
             steps {
-                echo "Building with configuration: ${env.BUILD_CONFIGURATION}"
-                bat "dotnet build ${env.SOLUTION} --configuration %BUILD_CONFIGURATION%"
+                echo "Building all .csproj files..."
+                bat 'powershell -Command "Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object { dotnet build $_.FullName --configuration %BUILD_CONFIGURATION% }"'
             }
         }
 
         stage('Publish') {
             steps {
-                echo "Publishing projects..."
-                bat "dotnet publish ${env.SOLUTION} --configuration %BUILD_CONFIGURATION% --output %ARTIFACT_DIR%"
-                // Optional: zip the published output
+                echo "Publishing all .csproj files..."
+                bat 'powershell -Command "Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object { dotnet publish $_.FullName --configuration %BUILD_CONFIGURATION% --output %ARTIFACT_DIR% }"'
                 bat "powershell Compress-Archive -Path %ARTIFACT_DIR%\\* -DestinationPath %ARTIFACT_NAME%.zip"
             }
         }
