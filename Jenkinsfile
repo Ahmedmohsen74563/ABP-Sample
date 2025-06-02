@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
+        SOLUTION = 'Acme.BookStore.sln'
         BUILD_CONFIGURATION = 'Release'
-        ARTIFACT_NAME = 'dotnet9app'
+        ARTIFACT_NAME = 'AcmeBookStore'
         NPM_CACHE_FOLDER = "${env.WORKSPACE}\\.npm"
         ARTIFACT_DIR = "${env.WORKSPACE}\\publish"
     }
@@ -11,23 +12,23 @@ pipeline {
     stages {
         stage('Restore Dependencies') {
             steps {
-                echo "Restoring all .csproj files..."
-                bat 'powershell -Command "Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object { dotnet restore $_.FullName }"'
+                echo "Restoring solution dependencies..."
+                bat "dotnet restore ${SOLUTION}"
             }
         }
 
         stage('Build') {
             steps {
-                echo "Building all .csproj files..."
-                bat 'powershell -Command "Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object { dotnet build $_.FullName --configuration %BUILD_CONFIGURATION% }"'
+                echo "Building solution..."
+                bat "dotnet build ${SOLUTION} --configuration ${BUILD_CONFIGURATION} --no-restore"
             }
         }
 
         stage('Publish') {
             steps {
-                echo "Publishing all .csproj files..."
-                bat 'powershell -Command "Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object { dotnet publish $_.FullName --configuration %BUILD_CONFIGURATION% --output %ARTIFACT_DIR% }"'
-                bat "powershell Compress-Archive -Path %ARTIFACT_DIR%\\* -DestinationPath %ARTIFACT_NAME%.zip"
+                echo "Publishing solution..."
+                bat "dotnet publish ${SOLUTION} --configuration ${BUILD_CONFIGURATION} --output ${ARTIFACT_DIR} --no-build"
+                bat "powershell Compress-Archive -Path ${ARTIFACT_DIR}\\* -DestinationPath ${ARTIFACT_NAME}.zip"
             }
         }
 
