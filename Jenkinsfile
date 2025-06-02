@@ -2,35 +2,34 @@ pipeline {
     agent any
 
     environment {
-        SOLUTION = '**/*.csproj'
+        SOLUTION = '**\\*.csproj'
         BUILD_CONFIGURATION = 'Release'
         ARTIFACT_NAME = 'dotnet9app'
-        NPM_CACHE_FOLDER = "${env.WORKSPACE}/.npm"
-        ARTIFACT_DIR = "${env.WORKSPACE}/publish"
+        NPM_CACHE_FOLDER = "${env.WORKSPACE}\\.npm"
+        ARTIFACT_DIR = "${env.WORKSPACE}\\publish"
     }
 
     stages {
-
         stage('Restore Dependencies') {
             steps {
                 echo "Restoring projects: ${env.SOLUTION}"
-                sh "dotnet restore ${env.SOLUTION}"
+                bat "dotnet restore ${env.SOLUTION}"
             }
         }
 
         stage('Build') {
             steps {
                 echo "Building with configuration: ${env.BUILD_CONFIGURATION}"
-                sh "dotnet build ${env.SOLUTION} --configuration ${env.BUILD_CONFIGURATION}"
+                bat "dotnet build ${env.SOLUTION} --configuration %BUILD_CONFIGURATION%"
             }
         }
 
         stage('Publish') {
             steps {
                 echo "Publishing projects..."
-                sh "dotnet publish ${env.SOLUTION} --configuration ${env.BUILD_CONFIGURATION} --output ${env.ARTIFACT_DIR} /p:PublishSingleFile=true"
-                // Optional zip step
-                sh "zip -r ${env.ARTIFACT_NAME}.zip ${env.ARTIFACT_DIR}"
+                bat "dotnet publish ${env.SOLUTION} --configuration %BUILD_CONFIGURATION% --output %ARTIFACT_DIR%"
+                // Optional: zip the published output
+                bat "powershell Compress-Archive -Path %ARTIFACT_DIR%\\* -DestinationPath %ARTIFACT_NAME%.zip"
             }
         }
 
