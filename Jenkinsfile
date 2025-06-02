@@ -4,7 +4,7 @@ pipeline {
     environment {
         SOLUTION = 'Acme.BookStore.sln'
         BUILD_CONFIGURATION = 'Release'
-        ARTIFACT_NAME = 'AcmeBookStore'
+        ARTIFACT_NAME = "AcmeBookStore-${env.BUILD_NUMBER}"
         NPM_CACHE_FOLDER = "${env.WORKSPACE}\\.npm"
         ARTIFACT_DIR = "${env.WORKSPACE}\\publish"
     }
