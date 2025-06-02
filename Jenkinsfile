@@ -10,6 +10,11 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs() // Jenkins built-in workspace cleaner
+            }
+        }
         stage('Restore Dependencies') {
             steps {
                 echo "Restoring solution dependencies..."
