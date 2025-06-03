@@ -60,7 +60,7 @@ pipeline {
                 powershell '''
                 Import-Module WebAdministration
                 if (-Not (Test-Path IIS:\\Sites\\Jenkins)) {
-                    New-Website -Name "Jenkins" -Port 80 -PhysicalPath "C:\\inetpub\\wwwroot\\Jenkins" -ApplicationPool "DefaultAppPool"
+                    New-Website -Name "Jenkins" -Port 88 -PhysicalPath "C:\\inetpub\\wwwroot\\Jenkins" -ApplicationPool "DefaultAppPool"
                 }
                 Start-Website -Name "Jenkins"
                 '''
