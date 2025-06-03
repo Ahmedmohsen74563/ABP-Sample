@@ -7,6 +7,8 @@ pipeline {
         ARTIFACT_NAME = "AcmeBookStore-${env.BUILD_NUMBER}"
         NPM_CACHE_FOLDER = "${env.WORKSPACE}\\.npm"
         ARTIFACT_DIR = "${env.WORKSPACE}\\publish"
+        IIS_SITE_NAME = 'Jenkins'
+        IIS_SITE_PATH = 'C:\\inetpub\\wwwroot\\Jenkins'
     }
 
     stages {
@@ -38,9 +40,42 @@ pipeline {
                 archiveArtifacts artifacts: "${ARTIFACT_NAME}.zip", fingerprint: true
             }
         }
+
+        stage('Deploy to IIS') {
+            steps {
+                echo "Deploying to IIS..."
+
+                // Optional: Take site offline (App_Offline)
+                bat """
+                echo '<html><body>Site is being updated...</body></html>' > ${ARTIFACT_DIR}\\App_Offline.htm
+                copy ${ARTIFACT_DIR}\\App_Offline.htm ${IIS_SITE_PATH}\\App_Offline.htm
+                """
+
+                // Clean existing site files
+                bat "powershell Remove-Item -Recurse -Force ${IIS_SITE_PATH}\\*"
+
+                // Unzip published app
+                bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH}"
+
+                // Remove App_Offline
+                bat "powershell Remove-Item -Force ${IIS_SITE_PATH}\\App_Offline.htm"
+
+                // Ensure IIS site exists and is started
+                bat """
+                powershell -NoProfile -Command \"
+                    Import-Module WebAdministration;
+                    if (-Not (Test-Path IIS:\\Sites\\${IIS_SITE_NAME})) {
+                        New-Website -Name '${IIS_SITE_NAME}' -Port 80 -PhysicalPath '${IIS_SITE_PATH}' -ApplicationPool 'DefaultAppPool';
+                    }
+                    Start-Website -Name '${IIS_SITE_NAME}';
+                \"
+                """
+            }
+        }
+
         stage('Clean Workspace') {
             steps {
-                cleanWs() // Jenkins built-in workspace cleaner
+                cleanWs()
             }
         }
     }
