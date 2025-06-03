@@ -12,7 +12,7 @@ pipeline {
     }
 
     stages {
-        
+
         stage('Restore Dependencies') {
             steps {
                 echo "Restoring solution dependencies..."
@@ -31,7 +31,7 @@ pipeline {
             steps {
                 echo "Publishing solution..."
                 bat "dotnet publish ${SOLUTION} --configuration ${BUILD_CONFIGURATION} --output ${ARTIFACT_DIR} --no-build"
-                bat "powershell Compress-Archive -Path ${ARTIFACT_DIR}\\* -DestinationPath ${ARTIFACT_NAME}.zip"
+                bat "powershell Compress-Archive -Path ${ARTIFACT_DIR}\\* -DestinationPath ${ARTIFACT_NAME}.zip -Force"
             }
         }
 
@@ -45,16 +45,16 @@ pipeline {
             steps {
                 echo "Deploying to IIS..."
 
-                // Optional: Take site offline (App_Offline)
+                // App_Offline for graceful stop
                 bat '''
-                powershell -NoProfile -Command "$html = \'<html><body>Site is being updated...</body></html>\'; Set-Content -Path \\"%ARTIFACT_DIR%\\\\App_Offline.htm\\" -Value $html"
-                copy %ARTIFACT_DIR%\\App_Offline.htm %IIS_SITE_PATH%\\App_Offline.htm
+                powershell -NoProfile -Command "$html = '<html><body>Site is being updated...</body></html>'; Set-Content -Path \\"${ARTIFACT_DIR}\\\\App_Offline.htm\\" -Value $html"
+                copy ${ARTIFACT_DIR}\\App_Offline.htm ${IIS_SITE_PATH}\\App_Offline.htm
                 '''
-                // Clean existing site files
-                bat "powershell Remove-Item -Recurse -Force ${IIS_SITE_PATH}\\*"
+                // Extract new deployment and overwrite existing files
+                bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH} -Force"
 
-                // Unzip published app
-                bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH}"
+                // Remove App_Offline
+                bat "powershell Remove-Item -Path '${IIS_SITE_PATH}\\App_Offline.htm' -Force -ErrorAction SilentlyContinue"
 
                 // Ensure IIS site exists and is started
                 powershell '''
