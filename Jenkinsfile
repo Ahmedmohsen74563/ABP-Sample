@@ -56,15 +56,12 @@ pipeline {
                 // Unzip published app
                 bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH}"
 
-                // Remove App_Offline
-                bat "powershell Remove-Item -Force ${IIS_SITE_PATH}\\App_Offline.htm"
-
                 // Ensure IIS site exists and is started
                 bat """
                 powershell -NoProfile -Command \"
                     Import-Module WebAdministration;
                     if (-Not (Test-Path IIS:\\Sites\\${IIS_SITE_NAME})) {
-                        New-Website -Name '${IIS_SITE_NAME}' -Port 80 -PhysicalPath '${IIS_SITE_PATH}' -ApplicationPool 'DefaultAppPool';
+                        New-Website -Name '${IIS_SITE_NAME}' -Port 88 -PhysicalPath '${IIS_SITE_PATH}' -ApplicationPool 'DefaultAppPool';
                     }
                     Start-Website -Name '${IIS_SITE_NAME}';
                 \"
