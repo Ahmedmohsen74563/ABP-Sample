@@ -35,9 +35,14 @@ pipeline {
             }
         }
 
-        stage('Archive Artifacts') {
+        stage('Run Database Migrations') {
             steps {
-                archiveArtifacts artifacts: "${ARTIFACT_NAME}.zip", fingerprint: true
+                echo "Running database migrations..."
+                // You may need to specify the project if your migrations are not in the startup project:
+                // bat "dotnet ef database update --project path\\to\\Your.EntityFrameworkCore.Project --startup-project path\\to\\Your.Web.Project --configuration ${BUILD_CONFIGURATION}"
+                
+                // Basic example assuming migrations in the main project and current directory context:
+                bat "dotnet ef database update --configuration ${BUILD_CONFIGURATION}"
             }
         }
 
@@ -45,18 +50,14 @@ pipeline {
             steps {
                 echo "Deploying to IIS..."
 
-                // App_Offline for graceful stop
-               bat '''
-               powershell -NoProfile -Command "$html = '<html><body>Site is being updated...</body></html>'; Set-Content -Path \\"%ARTIFACT_DIR%\\\\App_Offline.htm\\" -Value $html"
-               copy "%ARTIFACT_DIR%\\App_Offline.htm" "%IIS_SITE_PATH%\\App_Offline.htm"
+                bat '''
+                powershell -NoProfile -Command "$html = '<html><body>Site is being updated...</body></html>'; Set-Content -Path \\"%ARTIFACT_DIR%\\\\App_Offline.htm\\" -Value $html"
+                copy "%ARTIFACT_DIR%\\App_Offline.htm" "%IIS_SITE_PATH%\\App_Offline.htm"
                 '''
-                // Extract new deployment and overwrite existing files
-                bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH} -Force"
 
-                // Remove App_Offline
+                bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH} -Force"
                 bat "powershell Remove-Item -Path '${IIS_SITE_PATH}\\App_Offline.htm' -Force -ErrorAction SilentlyContinue"
 
-                // Ensure IIS site exists and is started
                 powershell '''
                 Import-Module WebAdministration
                 if (-Not (Test-Path IIS:\\Sites\\Jenkins)) {
