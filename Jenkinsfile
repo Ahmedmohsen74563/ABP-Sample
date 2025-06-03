@@ -46,11 +46,10 @@ pipeline {
                 echo "Deploying to IIS..."
 
                 // Optional: Take site offline (App_Offline)
-                bat """
-                powershell -NoProfile -Command "$content = '<html><body>Site is being updated...</body></html>'; Set-Content -Path \\"%ARTIFACT_DIR%\\\\App_Offline.htm\\" -Value $content"
-                copy ${ARTIFACT_DIR}\\App_Offline.htm ${IIS_SITE_PATH}\\App_Offline.htm
-                """
-
+                bat '''
+                powershell -NoProfile -Command "$html = \'<html><body>Site is being updated...</body></html>\'; Set-Content -Path \\"%ARTIFACT_DIR%\\\\App_Offline.htm\\" -Value $html"
+                copy %ARTIFACT_DIR%\\App_Offline.htm %IIS_SITE_PATH%\\App_Offline.htm
+                '''
                 // Clean existing site files
                 bat "powershell Remove-Item -Recurse -Force ${IIS_SITE_PATH}\\*"
 
