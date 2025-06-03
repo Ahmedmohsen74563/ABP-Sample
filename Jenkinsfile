@@ -37,15 +37,13 @@ pipeline {
 
         stage('Run Database Migrations') {
             steps {
-                echo "Running database migrations..."
-                // You may need to specify the project if your migrations are not in the startup project:
-                // bat "dotnet ef database update --project path\\to\\Your.EntityFrameworkCore.Project --startup-project path\\to\\Your.Web.Project --configuration ${BUILD_CONFIGURATION}"
-                
-                // Basic example assuming migrations in the main project and current directory context:
-                bat "dotnet ef database update --configuration ${BUILD_CONFIGURATION}"
+                bat '''
+                dotnet tool install --global dotnet-ef --ignore-failed-sources
+                set PATH=%PATH%;%USERPROFILE%\\.dotnet\\tools
+                dotnet ef database update --configuration Release
+                '''
             }
         }
-
         stage('Deploy to IIS') {
             steps {
                 echo "Deploying to IIS..."
