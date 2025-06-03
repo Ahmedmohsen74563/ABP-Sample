@@ -57,15 +57,13 @@ pipeline {
                 bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH}"
 
                 // Ensure IIS site exists and is started
-                bat """
-                powershell -NoProfile -Command \"
-                    Import-Module WebAdministration;
-                    if (-Not (Test-Path IIS:\\Sites\\${IIS_SITE_NAME})) {
-                        New-Website -Name '${IIS_SITE_NAME}' -Port 88 -PhysicalPath '${IIS_SITE_PATH}' -ApplicationPool 'DefaultAppPool';
-                    }
-                    Start-Website -Name '${IIS_SITE_NAME}';
-                \"
-                """
+                powershell '''
+                Import-Module WebAdministration
+                if (-Not (Test-Path IIS:\\Sites\\Jenkins)) {
+                    New-Website -Name "Jenkins" -Port 80 -PhysicalPath "C:\\inetpub\\wwwroot\\Jenkins" -ApplicationPool "DefaultAppPool"
+                }
+                Start-Website -Name "Jenkins"
+                '''
             }
         }
 
@@ -78,10 +76,10 @@ pipeline {
 
     post {
         failure {
-            echo 'Build failed.'
+            echo 'Pipeline failed.'
         }
         success {
-            echo 'Build succeeded.'
+            echo 'Pipeline succeeded.'
         }
     }
 }
