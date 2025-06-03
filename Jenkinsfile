@@ -46,9 +46,9 @@ pipeline {
                 echo "Deploying to IIS..."
 
                 // App_Offline for graceful stop
-                bat '''
-                powershell -NoProfile -Command "$html = '<html><body>Site is being updated...</body></html>'; Set-Content -Path \\"${ARTIFACT_DIR}\\\\App_Offline.htm\\" -Value $html"
-                copy ${ARTIFACT_DIR}\\App_Offline.htm ${IIS_SITE_PATH}\\App_Offline.htm
+               bat '''
+               powershell -NoProfile -Command "$html = '<html><body>Site is being updated...</body></html>'; Set-Content -Path \\"%ARTIFACT_DIR%\\\\App_Offline.htm\\" -Value $html"
+               copy "%ARTIFACT_DIR%\\App_Offline.htm" "%IIS_SITE_PATH%\\App_Offline.htm"
                 '''
                 // Extract new deployment and overwrite existing files
                 bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}.zip -DestinationPath ${IIS_SITE_PATH} -Force"
