@@ -47,6 +47,7 @@ pipeline {
 
                 // Optional: Take site offline (App_Offline)
                 bat """
+                powershell -NoProfile -Command "$content = '<html><body>Site is being updated...</body></html>'; Set-Content -Path \\"%ARTIFACT_DIR%\\\\App_Offline.htm\\" -Value $content"
                 copy ${ARTIFACT_DIR}\\App_Offline.htm ${IIS_SITE_PATH}\\App_Offline.htm
                 """
 
