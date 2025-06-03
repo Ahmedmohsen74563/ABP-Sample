@@ -35,13 +35,22 @@ pipeline {
             }
         }
 
-        stage('Run Database Migrations') {
+        stage('Publish and Run Migrator') {
             steps {
-                bat '''
-                dotnet tool install --global dotnet-ef --ignore-failed-sources
-                set PATH=%PATH%;%USERPROFILE%\\.dotnet\\tools
-                dotnet ef database update --configuration Release
-                '''
+                script {
+                    def outputDir = "${env.ARTIFACT_DIR}\\migrator"
+                    def migratorProject = 'src\\Acme.BookStore.DbMigrator\\Acme.BookStore.DbMigrator.csproj'
+                    bat """
+                    echo Installing EF CLI tools if needed...
+                    dotnet tool install --global dotnet-ef --ignore-failed-sources
+                    echo Adding EF tools path to environment...
+                    set PATH=%PATH%;%USERPROFILE%\\.dotnet\\tools
+                    echo Publishing DbMigrator project...
+                    dotnet publish ${migratorProject} --configuration ${BUILD_CONFIGURATION} --output ${outputDir}
+                    echo Running EF Core migrations...
+                    dotnet ef database update --configuration ${BUILD_CONFIGURATION} --project ${migratorProject} --startup-project ${migratorProject}
+                    """
+                }
             }
         }
         stage('Deploy to IIS') {
